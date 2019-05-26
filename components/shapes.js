@@ -28,9 +28,14 @@ const shapesArray = [
                 [1,1,1,1]
             ]
         ]
-
     }
 ];
+
+async function asyncForEach(array, callback) {
+  for (let index = 0; index < array.length; index++) {
+    await callback(array[index], index, array);
+  }
+}
 
 class Shapes {
     generateRandomShape() {
@@ -42,49 +47,129 @@ class Shapes {
         this.rotation = this.shape.rotations[Math.floor(Math.random() * this.shape.rotations.length)];
     }
 
-    canMove() {
-        let canMove = true;
-        let coordinate = 0;
 
-        let offsetX = 0;
-        let offsetY = 0;
+    async canMove() {
+        const waitFor = (ms) => new Promise(r => setTimeout(r, ms));
 
+        let oy = this.offsetY;
+        let ox = this.offsetX;
 
-        this.rotation.forEach((v, row) =>  v.forEach((val, column) => {
-            if(val) {
-                if(this.direction === 'down') {
-                    offsetY = row++ * this.cellHeight + this.offsetY;
-                    offsetX = column * this.cellWidth + this.offsetX;
+        if(this.direction === 'down') {    
+            oy = this.offsetY + this.cellHeight;
+        }
 
-                    coordinate = offsetX * offsetY;
-                    canMove = !this.coordinates.includes(coordinate);
+        if(this.direction === 'right') {
+            ox = this.offsetX + this.cellWidth;
+        }
 
-                    if ((this.cellHeight * this.rotation.length) + this.offsetY === this.canvasHeight) {
-                        canMove = false;
-                    }
+        if(this.direction === 'left') {
+            ox = this.offsetX - this.cellWidth;
+        }
+
+        let CanMove = true;
+        await asyncForEach(this.rotation, async (row, rowIndex) => {
+          await asyncForEach(row, async (column, columnIndex) => {
+            if(column) {
+                let x = 0;
+                let y = 0;
+
+                y = oy + (this.cellHeight * rowIndex);
+                x = ox + (this.cellWidth * columnIndex);
+
+                await waitFor(10);
+            
+                if(
+                    this.Ycoordinates.hasOwnProperty(y) && 
+                    this.Ycoordinates[y].indexOf(x) !== -1
+                ) {
+                    CanMove = false;
+                    return;
+                } 
+
+                if(y === this.canvasHeight) {
+                    CanMove = false;
                 }
             }
+          });
+        });
 
-        }));
+        if(CanMove) {
+            // clear old shape
+            await asyncForEach(this.rotation, async (row, rowIndex) => {
+              await asyncForEach(row, async (column, columnIndex) => {
+                if(column) {
+                    let x = 0;
+                    let y = 0;
 
-        return canMove;
+                    y = this.offsetY + (this.cellHeight * rowIndex);
+                    x = this.offsetX + (this.cellWidth * columnIndex);
+
+                    this.ctx.clearRect(x, y, this.cellWidth, this.cellHeight);                            
+                    await waitFor(10);
+                }
+              });
+            });
+
+            this.move();
+        } else {
+            // register coordinates
+            await asyncForEach(this.rotation, async (row, rowIndex) => {
+              await asyncForEach(row, async (column, columnIndex) => {
+                if(column) {
+                    let x = 0;
+                    let y = 0;
+
+                    y = this.offsetY + (this.cellHeight * rowIndex);
+                    x = this.offsetX + (this.cellWidth * columnIndex);
+
+                    
+                    if(this.Ycoordinates.hasOwnProperty(y)) {
+                        this.Ycoordinates[y].push(x);
+                    } else {
+                        this.Ycoordinates[y] = [x];
+                    }
+                    // console.log(this.Ycoordinates[y].length, this.xCellCount);
+                    if(this.Ycoordinates[y].length === this.xCellCount) {
+                        this.removeRow(y);
+                    }
+                    
+                    if(!this.offsetY) {
+                        location.reload();
+                    }
+                    
+                    await waitFor(10);
+                }
+              });
+            });
+            this.generateNewShape();
+            return;
+        } 
+        this.direction = 'down';
     }
 
     move() {
+        if(this.direction === 'down') {
+            this.offsetY += this.cellHeight;
+        }
+
+        if(this.direction === 'right') {
+            this.offsetX += this.cellWidth;
+        }
+
+        if(this.direction === 'left') {
+            this.offsetX -= this.cellWidth;
+        }
+                        
         this.rotation.forEach((v, row) =>  v.forEach((val, column) => {
             if(val) {
-                if(this.direction === 'down') {
-                    console.log(this.offsetY, this.offsetX);
-                    this.offsetY = row * this.cellHeight + this.offsetY;
-                    this.offsetX = column * this.cellWidth + this.offsetX;
-
-                    console.log('x: ' + this.offsetX, 'y: ' + this.offsetY);
-                }
-
+                let x = 0;
+                let y = 0;
+                
+                y = this.offsetY + (this.cellHeight * row);
+                x = this.offsetX + (this.cellWidth * column);
                 this.ctx.fillStyle = this.shape.color;
-                this.ctx.fillRect(this.offsetX, this.offsetY, this.cellWidth, this.cellHeight);
+                this.ctx.fillRect(x, y, this.cellWidth, this.cellHeight);
             }
-
         }));
     }
 
@@ -100,38 +185,13 @@ class Shapes {
     }
 
     initShape() {
-
-        if(this.canMove()) {
-            this.move();
-        } else {
-            this.registerCoordinates();
-        }
-
-        // for(let y = 0; y < this.rotation.length; y++) {
-        //     console.log(this.rotation[y].length);
-        //     // for(let x = 0; x < this.rotation[y].length; x++) {
-        //     //     const offsetY = y * this.cellHeight + offsetY_;
-        //     //     const offsetX = x * this.cellWidth + offsetX_;
-        //     //
-        //     //     if(this.rotation[y][x]) {
-        //     //         if(this.coordinates.includes(offsetY * offsetX)) {
-        //     //             this.generateNewShape();
-        //     //         } else {
-        //     //             this.ctx.fillStyle = this.shape.color;
-        //     //             this.coordinates.push(offsetX * offsetY);
-        //     //             this.ctx.fillRect(offsetX, offsetY, this.cellWidth, this.cellHeight);
-        //     //
-        //     //             this.offsetX = offsetX;
-        //     //             this.offsetY = offsetY;
-        //     //             this.clearShape();
-        //     //         }
-        //     //     }
-        //     // }
-        // }
-
+        this.canMove()
     }
 
-    clearShape() {
-        this.ctx.clearRect(this.offsetX, this.offsetY, this.cellWidth, this.cellHeight);
+    removeRow(row) {
+        this.Ycoordinates[row].forEach((x) => {
+            this.ctx.clearRect(x, row, this.cellWidth, this.cellHeight);
+        });
+        this.Ycoordinates[row] = [];
     }
 }

@@ -1,5 +1,3 @@
-// import Shapes from 'components/shapes';
-
 class Tetris extends Shapes {
     constructor(el) {
         super();
@@ -11,13 +9,15 @@ class Tetris extends Shapes {
         this.xCellCount = 8;
 
         this.offsetY = 0;
-        this.offsetX = (self.xCellCount/2) * (self.cellWidth / 2);
+        this.offsetX = 0;
 
         this.coordinates = [];
 
         this.direction = 'down';
 
         this.hasShape = false;
+        this.Ycoordinates = {};
+
         window.onload = function() {
             self.canvas =  document.getElementById(self.el);
             self.ctx = self.canvas.getContext('2d');
@@ -29,6 +29,8 @@ class Tetris extends Shapes {
 
             self.cellWidth = self.canvasWidth / self.xCellCount;
             self.cellHeight = self.canvasHeight / self.yCellCount;
+
+            self.offsetX = (self.xCellCount/2) * (self.cellWidth / 2)
 
             self.drawGrid();
             self.generateRandomShape();
@@ -49,29 +51,22 @@ class Tetris extends Shapes {
 
     moveShape() {
         const self = this;
-        this.offsetX = (this.xCellCount/2) * (this.cellWidth / 2);
-
         window.onkeyup = function (e) {
             if(e.code === 'ArrowRight' && self.offsetX + self.cellWidth + (self.rotation[0].length * self.cellWidth) <= self.canvasWidth) {
                 self.direction = 'right';
-                // self.offsetX = self.cellWidth + self.offsetX++;
             }
             if(e.code === 'ArrowLeft' && self.offsetX) {
                 self.direction = 'left';
-                //self.offsetX = self.offsetX - (self.cellWidth);
             }
         };
 
-        let interval = () => {
-            this.initShape();
-            // if ((self.cellHeight * self.rotation.length) + self.offsetY !== self.canvasHeight) {
-            //     this.hasShape = true;
-            //
-            // }
-            clearInterval(interval);
-        };
+       let interval = () => {
+           this.initShape();
+           clearInterval(interval);
+           self.drawGrid();
+       };
 
-        setInterval(interval, 5000);
+      setInterval(interval, 300);
     }
 }
 
