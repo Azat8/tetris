@@ -54,7 +54,7 @@ class Shapes {
         let oy = this.offsetY;
         let ox = this.offsetX;
 
-        if(this.direction === 'down') {    
+        if(this.direction === 'down') {
             oy = this.offsetY + this.cellHeight;
         }
 
@@ -77,14 +77,14 @@ class Shapes {
                 x = ox + (this.cellWidth * columnIndex);
 
                 await waitFor(10);
-            
+
                 if(
-                    this.Ycoordinates.hasOwnProperty(y) && 
+                    this.Ycoordinates.hasOwnProperty(y) &&
                     this.Ycoordinates[y].indexOf(x) !== -1
                 ) {
                     CanMove = false;
                     return;
-                } 
+                }
 
                 if(y === this.canvasHeight) {
                     CanMove = false;
@@ -104,7 +104,7 @@ class Shapes {
                     y = this.offsetY + (this.cellHeight * rowIndex);
                     x = this.offsetX + (this.cellWidth * columnIndex);
 
-                    this.ctx.clearRect(x, y, this.cellWidth, this.cellHeight);                            
+                    this.ctx.clearRect(x, y, this.cellWidth, this.cellHeight);
                     await waitFor(10);
                 }
               });
@@ -122,7 +122,7 @@ class Shapes {
                     y = this.offsetY + (this.cellHeight * rowIndex);
                     x = this.offsetX + (this.cellWidth * columnIndex);
 
-                    
+
                     if(this.Ycoordinates.hasOwnProperty(y)) {
                         this.Ycoordinates[y].push(x);
                     } else {
@@ -132,18 +132,18 @@ class Shapes {
                     if(this.Ycoordinates[y].length === this.xCellCount) {
                         this.removeRow(y);
                     }
-                    
+
                     if(!this.offsetY) {
                         location.reload();
                     }
-                    
+
                     await waitFor(10);
                 }
               });
             });
             this.generateNewShape();
             return;
-        } 
+        }
         this.direction = 'down';
     }
 
@@ -159,12 +159,12 @@ class Shapes {
         if(this.direction === 'left') {
             this.offsetX -= this.cellWidth;
         }
-                        
+
         this.rotation.forEach((v, row) =>  v.forEach((val, column) => {
             if(val) {
                 let x = 0;
                 let y = 0;
-                
+
                 y = this.offsetY + (this.cellHeight * row);
                 x = this.offsetX + (this.cellWidth * column);
                 this.ctx.fillStyle = this.shape.color;
@@ -193,5 +193,18 @@ class Shapes {
             this.ctx.clearRect(x, row, this.cellWidth, this.cellHeight);
         });
         this.Ycoordinates[row] = [];
+
+        for(let offsetY in this.Ycoordinates) {
+            if(
+                this.Ycoordinates.hasOwnProperty(offsetY) &&
+                row > offsetY
+            ) {
+                for(let cell of this.Ycoordinates[offsetY]) {
+                    let cell_ = this.ctx.getImageData(cell, offsetY, this.cellWidth, this.cellHeight);
+                    this.ctx.putImageData(cell_, cell, offsetY+this.cellHeight);
+                    console.log(cell, cell_);
+                }
+            }
+        }
     }
 }
